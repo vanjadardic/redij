@@ -7,10 +7,6 @@ public class Buffer {
    public byte[] bData;
    public char[] cData;
 
-   public Buffer(byte[] buffer) {
-
-   }
-
    public Buffer(int size) {
       bData = new byte[size];
       cData = new char[size];

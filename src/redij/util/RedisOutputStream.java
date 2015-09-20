@@ -15,7 +15,7 @@ public class RedisOutputStream extends FilterOutputStream {
          throw new IllegalArgumentException("Buffer size <= 0");
       }
       buf = new byte[size];
-      count=0;
+      count = 0;
    }
 
    private void flushBuffer() throws IOException {
@@ -132,11 +132,11 @@ public class RedisOutputStream extends FilterOutputStream {
             utf8Len++;
          } else if (c < 0x800) {
             utf8Len += 2;
-         } else if (isSurrogate(c)) {
+         } else if (!isSurrogate(c)) {
+            utf8Len += 3;
+         } else {
             utf8Len += 4;
             i++;
-         } else {
-            utf8Len += 3;
          }
       }
       writeInt(utf8Len);

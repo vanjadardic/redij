@@ -2,21 +2,19 @@ package redij;
 
 import redij.util.Buffer;
 import java.io.IOException;
-import java.io.InputStream;
-import java.nio.charset.Charset;
 import redij.exception.ClientException;
 import redij.exception.RedisException;
+import redij.util.RedisInputStream;
 
 public class RESP {
 
-   public static Charset DEFAULT_CHARSET = Charset.defaultCharset();
    private static final int TYPE_SIMPLE_STRING = '+';
    private static final int TYPE_ERROR = '-';
    private static final int TYPE_INTEGER = ':';
    private static final int TYPE_BULK_STRING = '$';
    private static final int TYPE_ARRAY = '*';
 
-   public static Object read(InputStream in, Buffer buf) throws IOException {
+   public static Object read(RedisInputStream in, Buffer buf) throws IOException {
       int type = in.read();
       switch (type) {
          case TYPE_SIMPLE_STRING:
@@ -24,16 +22,16 @@ public class RESP {
          case TYPE_ERROR:
             throw new RedisException(readSimpleString(in, buf));
          case TYPE_INTEGER:
-            return readInteger(in, buf);
+            return readInteger(in);
          case TYPE_BULK_STRING:
-            return readBulkString(in, buf);
+            return readBulkString(in);
          case TYPE_ARRAY:
             break;
       }
       throw new ClientException("Unexpected response type: " + (char) type);
    }
 
-   public static String readAsSimpleString(InputStream in, Buffer buf) throws IOException {
+   public static String readAsSimpleString(RedisInputStream in, Buffer buf) throws IOException {
       Object response = read(in, buf);
       if (response == null) {
          return null;
@@ -44,7 +42,7 @@ public class RESP {
       }
    }
 
-   public static Long readAsInteger(InputStream in, Buffer buf) throws IOException {
+   public static Long readAsInteger(RedisInputStream in, Buffer buf) throws IOException {
       Object response = read(in, buf);
       if (response == null) {
          return null;
@@ -55,7 +53,7 @@ public class RESP {
       }
    }
 
-   public static byte[] readAsBulkString(InputStream in, Buffer buf) throws IOException {
+   public static byte[] readAsBulkString(RedisInputStream in, Buffer buf) throws IOException {
       Object response = read(in, buf);
       if (response == null) {
          return null;
@@ -66,32 +64,16 @@ public class RESP {
       }
    }
 
-   private static String readSimpleString(InputStream in, Buffer buf) throws IOException {
-      int pos = 0;
-      do {
-         int read = in.read(buf.data, pos, 1);
-         if (read == -1) {
-            throw new ClientException("Unexpected end of stream");
-         }
-         pos += read;
-         if (pos >= 1) {
-            if (buf.data[pos - 1] == '\r') {
-               in.skip(1);
-               break;
-            } else if (buf.data.length == pos) {
-               buf.expand();
-            }
-         }
-      } while (true);
-      return new String(buf.data, 0, pos - 1, DEFAULT_CHARSET);
+   private static String readSimpleString(RedisInputStream in, Buffer buf) throws IOException {
+      return in.readUtf8(buf);
    }
 
-   private static Long readInteger(InputStream in, Buffer buf) throws IOException {
-      return Long.valueOf(readSimpleString(in, buf), 10);
+   private static Long readInteger(RedisInputStream in) throws IOException {
+      return in.readLong();
    }
 
-   private static byte[] readBulkString(InputStream in, Buffer buf) throws IOException {
-      int length = readInteger(in, buf).intValue();
+   private static byte[] readBulkString(RedisInputStream in) throws IOException {
+      int length = readInteger(in).intValue();
       if (length != -1) {
          byte[] data = new byte[length];
          int pos = 0;

@@ -1,44 +1,42 @@
 package redij.util;
 
-import java.util.Arrays;
-
 public class Buffer {
 
-   public static int INITIAL_BUFFER_SIZE = 32;
-   public byte[] data;
+   public static int INITIAL_BUFFER_SIZE = 1024;
+   public static int EXPAND_FACTOR = 2;
+   public byte[] bData;
+   public char[] cData;
 
    public Buffer(byte[] buffer) {
-      this.data = buffer;
+
    }
 
    public Buffer(int size) {
-      this(new byte[size]);
+      bData = new byte[size];
+      cData = new char[size];
    }
 
    public Buffer() {
       this(INITIAL_BUFFER_SIZE);
    }
 
-   public void expand(boolean keepData, int factor) {
-      if (keepData) {
-         byte[] newBuffer = new byte[data.length * factor];
-         System.arraycopy(data, 0, newBuffer, 0, data.length);
-         data = newBuffer;
-      } else {
-         data = new byte[data.length * factor];
-      }
-      data = Arrays.copyOf(data, data.length * factor);
+   public void expandB(int factor) {
+      byte[] newData = new byte[bData.length * factor];
+      System.arraycopy(bData, 0, newData, 0, bData.length);
+      bData = newData;
    }
 
-   public void expand() {
-      expand(true, 2);
+   public void expandB() {
+      expandB(EXPAND_FACTOR);
    }
 
-   public void expand(boolean keepData) {
-      expand(keepData, 2);
+   public void expandC(int factor) {
+      char[] newData = new char[cData.length * factor];
+      System.arraycopy(cData, 0, newData, 0, cData.length);
+      cData = newData;
    }
 
-   public void expand(int factor) {
-      expand(true, factor);
+   public void expandC() {
+      expandC(EXPAND_FACTOR);
    }
 }

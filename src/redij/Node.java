@@ -1,11 +1,11 @@
 package redij;
 
-import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
+import java.io.ByteArrayInputStream;
 import redij.util.Buffer;
 import java.io.IOException;
-import java.io.OutputStream;
 import java.net.Socket;
+import redij.util.RedisInputStream;
+import redij.util.RedisOutputStream;
 
 public class Node {
 
@@ -13,8 +13,8 @@ public class Node {
    private final int port;
    private final Buffer buf;
    private Socket socket;
-   private BufferedOutputStream out;
-   private BufferedInputStream in;
+   private RedisOutputStream out;
+   private RedisInputStream in;
    private static final byte[] CRLF = "\r\n".getBytes();
    private static final byte[] PING1 = "*1\r\n$4\r\nPING\r\n".getBytes();
    private static final byte[] PING2 = "*2\r\n$4\r\nPING\r\n$".getBytes();
@@ -28,15 +28,14 @@ public class Node {
 
    public void openConnection() throws IOException {
       socket = new Socket(host, port);
-      out = new BufferedOutputStream(socket.getOutputStream(), 512);
-      in = new BufferedInputStream(socket.getInputStream(), 4096);
+      out = new RedisOutputStream(socket.getOutputStream(), 8 * 1024);
+      in = new RedisInputStream(socket.getInputStream(), 32 * 1024);
    }
 
-   private static void writeBulkString(OutputStream out, String value) throws IOException {
-      byte[] valueBytes = value.getBytes(RESP.DEFAULT_CHARSET);
-      out.write(Integer.toString(valueBytes.length).getBytes(RESP.DEFAULT_CHARSET));
+   private static void writeBulkString(RedisOutputStream out, String string) throws IOException {
+      out.writeUtf8Length(string);
       out.write(CRLF);
-      out.write(valueBytes);
+      out.writeUtf8(string);
       out.write(CRLF);
    }
 
@@ -50,7 +49,11 @@ public class Node {
       out.write(PING2);
       writeBulkString(out, param1);
       out.flush();
-      return new String(RESP.readAsBulkString(in, buf), RESP.DEFAULT_CHARSET);
+      ByteArrayInputStream bais = new ByteArrayInputStream(RESP.readAsBulkString(in, buf));
+
+
+
+      return RedisInputStream.      new String(, RESP.DEFAULT_CHARSET);
    }
 
    public Long INCR(String param1) throws IOException {

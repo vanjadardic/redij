@@ -69,16 +69,21 @@ public class RESP {
    private static String readSimpleString(InputStream in, Buffer buf) throws IOException {
       int pos = 0;
       do {
-         pos += in.read(buf.data, pos, buf.data.length - pos);
-         if (pos >= 2) {
-            if (buf.data[pos - 2] == '\r' && buf.data[pos - 1] == '\n') {
+         int read = in.read(buf.data, pos, 1);
+         if (read == -1) {
+            throw new ClientException("Unexpected end of stream");
+         }
+         pos += read;
+         if (pos >= 1) {
+            if (buf.data[pos - 1] == '\r') {
+               in.skip(1);
                break;
             } else if (buf.data.length == pos) {
                buf.expand();
             }
          }
       } while (true);
-      return new String(buf.data, 0, pos - 2, DEFAULT_CHARSET);
+      return new String(buf.data, 0, pos - 1, DEFAULT_CHARSET);
    }
 
    private static Long readInteger(InputStream in, Buffer buf) throws IOException {
@@ -93,7 +98,7 @@ public class RESP {
          while (pos < length) {
             pos += in.read(data, pos, length - pos);
          }
-         readSimpleString(in, buf);
+         in.skip(2);
          return data;
       } else {
          return null;

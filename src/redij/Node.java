@@ -1,9 +1,9 @@
 package redij;
 
-import java.io.BufferedReader;
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
 import redij.util.Buffer;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
 
@@ -13,15 +13,12 @@ public class Node {
    private final int port;
    private final Buffer buf;
    private Socket socket;
-   private OutputStream out;
-   private InputStream in;
-   /**
-    * ******** COMMANDS *********
-    */
-   private static final byte[] SEPARATOR = " ".getBytes();
-   private static final byte[] NEWLINE = "\r\n".getBytes();
-   private static final byte[] PING = "PING".getBytes();
-   private static final byte[] INCR = "INCR".getBytes();
+   private BufferedOutputStream out;
+   private BufferedInputStream in;
+   private static final byte[] CRLF = "\r\n".getBytes();
+   private static final byte[] PING1 = "*1\r\n$4\r\nPING\r\n".getBytes();
+   private static final byte[] PING2 = "*2\r\n$4\r\nPING\r\n$".getBytes();
+   private static final byte[] INCR = "*2\r\n$4\r\nINCR\r\n$".getBytes();
 
    public Node(String host, int port) {
       this.host = host;
@@ -31,34 +28,35 @@ public class Node {
 
    public void openConnection() throws IOException {
       socket = new Socket(host, port);
-      out = socket.getOutputStream();
-      in = socket.getInputStream();
-
+      out = new BufferedOutputStream(socket.getOutputStream(), 512);
+      in = new BufferedInputStream(socket.getInputStream(), 4096);
    }
 
-   public String PING(String message) throws IOException {
-      out.write(PING);
-      if (message != null) {
-         out.write(SEPARATOR);
-         out.write(message.getBytes(RESP.DEFAULT_CHARSET));
-      }
-      out.write(NEWLINE);
-      if (message != null) {
-         return new String(RESP.readAsBulkString(in, buf), RESP.DEFAULT_CHARSET);
-      } else {
-         return RESP.readAsSimpleString(in, buf);
-      }
+   private static void writeBulkString(OutputStream out, String value) throws IOException {
+      byte[] valueBytes = value.getBytes(RESP.DEFAULT_CHARSET);
+      out.write(Integer.toString(valueBytes.length).getBytes(RESP.DEFAULT_CHARSET));
+      out.write(CRLF);
+      out.write(valueBytes);
+      out.write(CRLF);
    }
 
    public String PING() throws IOException {
-      return PING(null);
+      out.write(PING1);
+      out.flush();
+      return RESP.readAsSimpleString(in, buf);
    }
 
-   public Long INCR(String key) throws IOException {
+   public String PING(String param1) throws IOException {
+      out.write(PING2);
+      writeBulkString(out, param1);
+      out.flush();
+      return new String(RESP.readAsBulkString(in, buf), RESP.DEFAULT_CHARSET);
+   }
+
+   public Long INCR(String param1) throws IOException {
       out.write(INCR);
-      out.write(SEPARATOR);
-      out.write(key.getBytes(RESP.DEFAULT_CHARSET));
-      out.write(NEWLINE);
+      writeBulkString(out, param1);
+      out.flush();
       return RESP.readAsInteger(in, buf);
    }
 }

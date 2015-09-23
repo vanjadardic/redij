@@ -125,7 +125,7 @@ public class RedisInputStream extends FilterInputStream {
    public long readLong() throws IOException {
       int b = read();
       boolean isNegative = (b == '-');
-      long value = (isNegative ? 0 : b);
+      long value = (isNegative ? 0 : (b - '0'));
       while (true) {
          b = read();
          if (b == '\r') {

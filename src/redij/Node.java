@@ -49,11 +49,7 @@ public class Node {
       out.write(PING2);
       writeBulkString(out, param1);
       out.flush();
-      ByteArrayInputStream bais = new ByteArrayInputStream(RESP.readAsBulkString(in, buf));
-
-
-
-      return RedisInputStream.      new String(, RESP.DEFAULT_CHARSET);
+      return new String(RESP.readAsBulkString(in, buf));
    }
 
    public Long INCR(String param1) throws IOException {

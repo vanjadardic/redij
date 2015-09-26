@@ -7,7 +7,7 @@ import redij.exception.ClientException;
 
 public class RedisInputStream extends FilterInputStream {
 
-   public static final int SKIP_BUFFER_SIZE = 2048;
+   private static final int SKIP_BUFFER_SIZE = 2048;
    private byte buf[];
    private int count;
    private int pos;
@@ -115,6 +115,15 @@ public class RedisInputStream extends FilterInputStream {
       int n = count - pos;
       int avail = in.available();
       return n > (Integer.MAX_VALUE - avail) ? Integer.MAX_VALUE : n + avail;
+   }
+
+   @Override
+   public void close() throws IOException {
+      super.close();
+      buf = null;
+      count = 0;
+      pos = 0;
+      skipBuf = null;
    }
 
    @Override

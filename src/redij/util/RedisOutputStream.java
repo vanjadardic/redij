@@ -6,7 +6,7 @@ import java.io.OutputStream;
 
 public class RedisOutputStream extends FilterOutputStream {
 
-   private final byte buf[];
+   private byte buf[];
    private int count;
 
    public RedisOutputStream(OutputStream out, int size) {
@@ -51,6 +51,13 @@ public class RedisOutputStream extends FilterOutputStream {
    public void flush() throws IOException {
       flushBuffer();
       out.flush();
+   }
+
+   @Override
+   public void close() throws IOException {
+      super.close();
+      buf = null;
+      count = 0;
    }
 
    private static final int[] SIZE_TABLE = {9, 99, 999, 9999, 99999, 999999, 9999999, 99999999, 999999999, Integer.MAX_VALUE};

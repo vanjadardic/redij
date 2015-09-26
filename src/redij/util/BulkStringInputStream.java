@@ -99,14 +99,6 @@ public class BulkStringInputStream extends FilterInputStream {
    }
 
    @Override
-   public synchronized void mark(int readlimit) {
-   }
-
-   @Override
-   public synchronized void reset() throws IOException {
-   }
-
-   @Override
    public boolean markSupported() {
       return false;
    }

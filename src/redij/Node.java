@@ -2,19 +2,13 @@ package redij;
 
 import redij.util.Buffer;
 import java.io.IOException;
-import java.net.Socket;
 import redij.exception.ClientException;
-import redij.util.RedisInputStream;
 import redij.util.RedisOutputStream;
 
 public class Node {
 
-   private final String host;
-   private final int port;
-   private final Buffer buf;
-   private Socket socket;
-   private RedisOutputStream out;
-   private RedisInputStream in;
+   public final NodeConnection con;
+   public final Buffer buf;
    private static final byte[] CRLF = "\r\n".getBytes();
    private static final byte[] BULK_STRING_PREFIX = "$".getBytes();
    private static final byte[] ARRAY_PREFIX = "*".getBytes();
@@ -27,16 +21,9 @@ public class Node {
    private static final byte[] INFO0 = createCommand("INFO", 0);
    private static final byte[] INFO1 = createCommand("INFO", 1);
 
-   public Node(String host, int port) {
-      this.host = host;
-      this.port = port;
+   public Node(NodeConnection connection) {
+      con = connection;
       buf = new Buffer();
-   }
-
-   public void openConnection() throws IOException {
-      socket = new Socket(host, port);
-      out = new RedisOutputStream(socket.getOutputStream(), 8 * 1024);
-      in = new RedisInputStream(socket.getInputStream(), 32 * 1024);
    }
 
    private static byte[] createCommand(String command, int numArguments) {
@@ -67,66 +54,66 @@ public class Node {
    }
 
    public String PING() throws IOException {
-      out.write(PING0);
-      out.flush();
-      return RESP.readAsSimpleString(in, buf);
+      con.out.write(PING0);
+      con.out.flush();
+      return RESP.readAsSimpleString(con.in, buf);
    }
 
    public String PING(String arg) throws IOException {
-      out.write(PING1);
-      writeBulkString(out, arg);
-      out.flush();
-      return RESP.readAsBulkStringString(in, buf);
+      con.out.write(PING1);
+      writeBulkString(con.out, arg);
+      con.out.flush();
+      return RESP.readAsBulkStringString(con.in, buf);
    }
 
    public Long INCR(String key) throws IOException {
-      out.write(INCR);
-      writeBulkString(out, key);
-      out.flush();
-      return RESP.readAsInteger(in, buf);
+      con.out.write(INCR);
+      writeBulkString(con.out, key);
+      con.out.flush();
+      return RESP.readAsInteger(con.in, buf);
    }
 
    public Long HSET(String key, String field, String value) throws IOException {
-      out.write(HSET);
-      writeBulkString(out, key);
-      writeBulkStringPrefix(out, field);
-      writeBulkStringPrefix(out, value);
-      out.flush();
-      return RESP.readAsInteger(in, buf);
+      con.out.write(HSET);
+      writeBulkString(con.out, key);
+      writeBulkStringPrefix(con.out, field);
+      writeBulkStringPrefix(con.out, value);
+      con.out.flush();
+      return RESP.readAsInteger(con.in, buf);
    }
 
    public Object[] HGETALL(String key) throws IOException {
-      out.write(HGETALL);
-      writeBulkString(out, key);
-      out.flush();
-      return RESP.readAsArray(in, buf);
+      con.out.write(HGETALL);
+      writeBulkString(con.out, key);
+      con.out.flush();
+      return RESP.readAsArray(con.in, buf);
    }
 
    public Object[] HMGET(String key, String... fields) throws IOException {
       if (fields.length == 0) {
          throw new ClientException("At least one fields must be specified");
       }
-      out.write(ARRAY_PREFIX);
-      out.writeInt(fields.length + 2);
-      out.write(HMGET);
-      writeBulkString(out, key);
+      con.out.write(ARRAY_PREFIX);
+      con.out.writeInt(fields.length + 2);
+      con.out.write(HMGET);
+      writeBulkString(con.out, key);
       for (String field : fields) {
-         writeBulkStringPrefix(out, field);
+         writeBulkStringPrefix(con.out, field);
       }
-      out.flush();
-      return RESP.readAsArray(in, buf);
+      con.out.flush();
+      return RESP.readAsArray(con.in, buf);
    }
 
    public String INFO() throws IOException {
-      out.write(INFO0);
-      out.flush();
-      return RESP.readAsBulkStringString(in, buf);
+      con.out.write(INFO0);
+      con.out.flush();
+      return RESP.readAsBulkStringString(con.in, buf);
    }
 
    public String INFO(String section) throws IOException {
-      out.write(INFO1);
-      writeBulkString(out, section);
-      out.flush();
-      return RESP.readAsBulkStringString(in, buf);
+      con.out.write(INFO1);
+      writeBulkString(con.out, section);
+      con.out.flush();
+      return RESP.readAsBulkStringString(con.in, buf);
    }
 }

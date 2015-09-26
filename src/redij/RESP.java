@@ -4,6 +4,7 @@ import redij.util.Buffer;
 import java.io.IOException;
 import redij.exception.ClientException;
 import redij.exception.RedisException;
+import redij.util.BulkStringInputStream;
 import redij.util.RedisInputStream;
 
 public class RESP {
@@ -18,15 +19,15 @@ public class RESP {
       int type = in.read();
       switch (type) {
          case TYPE_SIMPLE_STRING:
-            return readSimpleString(in, buf);
+            return in.readUtf8(buf);
          case TYPE_ERROR:
-            throw new RedisException(readSimpleString(in, buf));
+            throw new RedisException(in.readUtf8(buf));
          case TYPE_INTEGER:
-            return readInteger(in);
+            return in.readLong();
          case TYPE_BULK_STRING:
             return readBulkString(in);
          case TYPE_ARRAY:
-            break;
+            return readArray(in, buf);
       }
       throw new ClientException("Unexpected response type: " + (char) type);
    }
@@ -53,37 +54,58 @@ public class RESP {
       }
    }
 
-   public static byte[] readAsBulkString(RedisInputStream in, Buffer buf) throws IOException {
+   public static BulkStringInputStream readAsBulkString(RedisInputStream in, Buffer buf) throws IOException {
       Object response = read(in, buf);
       if (response == null) {
          return null;
-      } else if (response instanceof byte[]) {
-         return (byte[]) response;
+      } else if (response instanceof BulkStringInputStream) {
+         return (BulkStringInputStream) response;
       } else {
-         throw new ClientException("Expected " + byte[].class.getSimpleName() + " but got " + response.getClass().getSimpleName());
+         throw new ClientException("Expected " + BulkStringInputStream.class.getSimpleName() + " but got " + response.getClass().getSimpleName());
       }
    }
 
-   private static String readSimpleString(RedisInputStream in, Buffer buf) throws IOException {
-      return in.readUtf8(buf);
-   }
-
-   private static Long readInteger(RedisInputStream in) throws IOException {
-      return in.readLong();
-   }
-
-   private static byte[] readBulkString(RedisInputStream in) throws IOException {
-      int length = readInteger(in).intValue();
-      if (length != -1) {
-         byte[] data = new byte[length];
-         int pos = 0;
-         while (pos < length) {
-            pos += in.read(data, pos, length - pos);
-         }
-         in.skip(2);
-         return data;
+   public static String readAsBulkStringString(RedisInputStream in, Buffer buf) throws IOException {
+      BulkStringInputStream bsin = readAsBulkString(in, buf);
+      if (bsin == null) {
+         return null;
       } else {
+         String string = bsin.readUtf8(buf);
+         bsin.close();
+         return string;
+      }
+   }
+
+   public static Object[] readAsArray(RedisInputStream in, Buffer buf) throws IOException {
+      Object response = read(in, buf);
+      if (response == null) {
+         return null;
+      } else if (response instanceof Object[]) {
+         return (Object[]) response;
+      } else {
+         throw new ClientException("Expected " + Object[].class.getSimpleName() + " but got " + response.getClass().getSimpleName());
+      }
+   }
+
+   private static BulkStringInputStream readBulkString(RedisInputStream in) throws IOException {
+      int length = (int) in.readLong();
+      return length != -1 ? new BulkStringInputStream(in, length) : null;
+   }
+
+   private static Object[] readArray(RedisInputStream in, Buffer buf) throws IOException {
+      int length = (int) in.readLong();
+      if (length == -1) {
          return null;
       }
+      Object[] array = new Object[length];
+      for (int i = 0; i < array.length; i++) {
+         array[i] = read(in, buf);
+         if (array[i] instanceof BulkStringInputStream) {
+            try (BulkStringInputStream bsin = (BulkStringInputStream) array[i]) {
+               array[i] = bsin.readUtf8(buf);
+            }
+         }
+      }
+      return array;
    }
 }

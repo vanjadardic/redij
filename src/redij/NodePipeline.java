@@ -54,6 +54,11 @@ public class NodePipeline {
       count++;
    }
 
+   public void GET(String key) throws IOException {
+      node.GETreq(key);
+      count++;
+   }
+
    public Object[] sync() throws IOException {
       if (count == 0) {
          return EMPTY_RESPONSE;

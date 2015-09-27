@@ -47,6 +47,7 @@ public class NodeFactory implements PooledObjectFactory<Node> {
       Node node = p.getObject();
       node.con.close();
       node.buf.clear();
+      node.pipe.clear();
    }
 
    @Override

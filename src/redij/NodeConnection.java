@@ -30,6 +30,18 @@ public class NodeConnection {
       in = null;
    }
 
+   public NodeConnection(String host, int port) {
+      this.host = host;
+      this.port = port;
+      this.socketTimeout = NodeFactory.DEFAULT_TIMEOUT;
+      this.soTimeout = NodeFactory.DEFAULT_TIMEOUT;
+      this.outputBufferSize = NodeFactory.DEFAULT_OUTPUT_BUFFER_SIZE;
+      this.inputBufferSize = NodeFactory.DEFAULT_INPUT_BUFFER_SIZE;
+      socket = null;
+      out = null;
+      in = null;
+   }
+
    public void open() throws IOException {
       close();
       socket = new Socket();

@@ -9,6 +9,7 @@ public class Node {
 
    public final NodeConnection con;
    public final Buffer buf;
+   public final NodePipeline pipe;
    private static final byte[] CRLF = "\r\n".getBytes();
    private static final byte[] BULK_STRING_PREFIX = "$".getBytes();
    private static final byte[] ARRAY_PREFIX = "*".getBytes();
@@ -24,6 +25,7 @@ public class Node {
    public Node(NodeConnection connection) {
       con = connection;
       buf = new Buffer();
+      pipe = new NodePipeline(this);
    }
 
    private static byte[] createCommand(String command, int numArguments) {
@@ -53,43 +55,63 @@ public class Node {
       out.write(CRLF);
    }
 
-   public String PING() throws IOException {
+   protected void PINGreq() throws IOException {
       con.out.write(PING0);
+   }
+
+   public String PING() throws IOException {
+      PINGreq();
       con.out.flush();
       return RESP.readAsSimpleString(con.in, buf);
    }
 
-   public String PING(String arg) throws IOException {
+   protected void PINGreq(String arg) throws IOException {
       con.out.write(PING1);
       writeBulkString(con.out, arg);
+   }
+
+   public String PING(String arg) throws IOException {
+      PINGreq(arg);
       con.out.flush();
       return RESP.readAsBulkStringString(con.in, buf);
    }
 
-   public Long INCR(String key) throws IOException {
+   protected void INCRreq(String key) throws IOException {
       con.out.write(INCR);
       writeBulkString(con.out, key);
+   }
+
+   public Long INCR(String key) throws IOException {
+      INCRreq(key);
       con.out.flush();
       return RESP.readAsInteger(con.in, buf);
    }
 
-   public Long HSET(String key, String field, String value) throws IOException {
+   protected void HSETreq(String key, String field, String value) throws IOException {
       con.out.write(HSET);
       writeBulkString(con.out, key);
       writeBulkStringPrefix(con.out, field);
       writeBulkStringPrefix(con.out, value);
+   }
+
+   public Long HSET(String key, String field, String value) throws IOException {
+      HSETreq(key, field, value);
       con.out.flush();
       return RESP.readAsInteger(con.in, buf);
    }
 
-   public Object[] HGETALL(String key) throws IOException {
+   protected void HGETALLreq(String key) throws IOException {
       con.out.write(HGETALL);
       writeBulkString(con.out, key);
+   }
+
+   public Object[] HGETALL(String key) throws IOException {
+      HGETALLreq(key);
       con.out.flush();
       return RESP.readAsArray(con.in, buf);
    }
 
-   public Object[] HMGET(String key, String... fields) throws IOException {
+   protected void HMGETreq(String key, String... fields) throws IOException {
       if (fields.length == 0) {
          throw new ClientException("At least one fields must be specified");
       }
@@ -100,19 +122,31 @@ public class Node {
       for (String field : fields) {
          writeBulkStringPrefix(con.out, field);
       }
+   }
+
+   public Object[] HMGET(String key, String... fields) throws IOException {
+      HMGETreq(key, fields);
       con.out.flush();
       return RESP.readAsArray(con.in, buf);
    }
 
-   public String INFO() throws IOException {
+   protected void INFOreq() throws IOException {
       con.out.write(INFO0);
+   }
+
+   public String INFO() throws IOException {
+      INFOreq();
       con.out.flush();
       return RESP.readAsBulkStringString(con.in, buf);
    }
 
-   public String INFO(String section) throws IOException {
+   protected void INFOreq(String section) throws IOException {
       con.out.write(INFO1);
       writeBulkString(con.out, section);
+   }
+
+   public String INFO(String section) throws IOException {
+      INFOreq(section);
       con.out.flush();
       return RESP.readAsBulkStringString(con.in, buf);
    }

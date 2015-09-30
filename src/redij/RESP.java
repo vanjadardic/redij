@@ -21,7 +21,7 @@ public class RESP {
          case TYPE_SIMPLE_STRING:
             return in.readUtf8(buf);
          case TYPE_ERROR:
-            throw new RedisException(in.readUtf8(buf));
+            return new RedisException(in.readUtf8(buf));
          case TYPE_INTEGER:
             return in.readLong();
          case TYPE_BULK_STRING:
@@ -38,6 +38,8 @@ public class RESP {
          return null;
       } else if (response instanceof String) {
          return (String) response;
+      } else if (response instanceof RedisException) {
+         throw (RedisException) response;
       } else {
          throw new ClientException("Expected " + String.class.getSimpleName() + " but got " + response.getClass().getSimpleName());
       }
@@ -49,6 +51,8 @@ public class RESP {
          return null;
       } else if (response instanceof Long) {
          return (Long) response;
+      } else if (response instanceof RedisException) {
+         throw (RedisException) response;
       } else {
          throw new ClientException("Expected " + Long.class.getSimpleName() + " but got " + response.getClass().getSimpleName());
       }
@@ -60,6 +64,8 @@ public class RESP {
          return null;
       } else if (response instanceof BulkStringInputStream) {
          return (BulkStringInputStream) response;
+      } else if (response instanceof RedisException) {
+         throw (RedisException) response;
       } else {
          throw new ClientException("Expected " + BulkStringInputStream.class.getSimpleName() + " but got " + response.getClass().getSimpleName());
       }
@@ -82,6 +88,8 @@ public class RESP {
          return null;
       } else if (response instanceof Object[]) {
          return (Object[]) response;
+      } else if (response instanceof RedisException) {
+         throw (RedisException) response;
       } else {
          throw new ClientException("Expected " + Object[].class.getSimpleName() + " but got " + response.getClass().getSimpleName());
       }

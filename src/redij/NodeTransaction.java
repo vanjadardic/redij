@@ -8,10 +8,12 @@ public class NodeTransaction {
    private static final byte[] EXEC = Node.createCommand("EXEC", 0);
    private static final byte[] DISCARD = Node.createCommand("DISCARD", 0);
 
-   private final Node node;
+   public final Node node;
+   public final NodeTransactionPipeline transPipe;
 
    public NodeTransaction(Node node) {
       this.node = node;
+      this.transPipe = new NodeTransactionPipeline(this);
    }
 
    private void handleCommand() throws IOException {
@@ -83,15 +85,27 @@ public class NodeTransaction {
       handleCommand();
    }
 
-   public Object[] EXEC() throws IOException {
+   protected void EXECreq() throws IOException {
       node.con.out.write(EXEC);
+   }
+
+   public Object[] EXEC() throws IOException {
+      EXECreq();
       node.con.out.flush();
       return RESP.readAsArray(node.con.in, node.buf);
    }
 
-   public String DISCARD() throws IOException {
+   protected void DISCARDreq() throws IOException {
       node.con.out.write(DISCARD);
+   }
+
+   public String DISCARD() throws IOException {
+      DISCARDreq();
       node.con.out.flush();
       return RESP.readAsSimpleString(node.con.in, node.buf);
+   }
+
+   public void clear() throws IOException {
+      transPipe.clear();
    }
 }

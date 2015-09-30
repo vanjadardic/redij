@@ -17,6 +17,13 @@ public class BulkStringInputStream extends FilterInputStream {
       this.remaining = size;
    }
 
+   private void checkRemaining() throws IOException {
+      if (remaining == 0) {
+         in.skip(2);
+         remaining = -1;
+      }
+   }
+
    @Override
    public int read() throws IOException {
       int b = -1;
@@ -27,10 +34,7 @@ public class BulkStringInputStream extends FilterInputStream {
          }
          remaining--;
       }
-      if (remaining == 0) {
-         in.skip(2);
-         remaining = -1;
-      }
+      checkRemaining();
       return b;
    }
 
@@ -44,10 +48,7 @@ public class BulkStringInputStream extends FilterInputStream {
          }
          remaining -= readn;
       }
-      if (remaining == 0) {
-         in.skip(2);
-         remaining = -1;
-      }
+      checkRemaining();
       return readn;
    }
 
@@ -58,10 +59,7 @@ public class BulkStringInputStream extends FilterInputStream {
          skipped = in.skip(Math.min(n, remaining));
          remaining -= skipped;
       }
-      if (remaining == 0) {
-         in.skip(2);
-         remaining = -1;
-      }
+      checkRemaining();
       return skipped;
    }
 
@@ -73,10 +71,7 @@ public class BulkStringInputStream extends FilterInputStream {
             remaining -= in.skip(remaining);
          }
       }
-      if (remaining == 0) {
-         in.skip(2);
-         remaining = -1;
-      }
+      checkRemaining();
       return remainingTmp;
    }
 
@@ -86,10 +81,7 @@ public class BulkStringInputStream extends FilterInputStream {
       if (remaining > 0) {
          available = Math.min(in.available(), remaining);
       }
-      if (remaining == 0) {
-         in.skip(2);
-         remaining = -1;
-      }
+      checkRemaining();
       return available;
    }
 

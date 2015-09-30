@@ -185,4 +185,17 @@ public class Node {
       con.out.flush();
       return RESP.readAsBulkStringString(con.in, buf);
    }
+
+   public void close() {
+      try {
+         trans.clear();
+      } catch (IOException ex) {
+      }
+      try {
+         pipe.clear();
+      } catch (IOException ex) {
+      }
+      buf.clear();
+      con.close();
+   }
 }

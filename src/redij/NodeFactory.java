@@ -44,10 +44,7 @@ public class NodeFactory implements PooledObjectFactory<Node> {
 
    @Override
    public void destroyObject(PooledObject<Node> p) throws Exception {
-      Node node = p.getObject();
-      node.con.close();
-      node.buf.clear();
-      node.pipe.clear();
+      p.getObject().close();
    }
 
    @Override

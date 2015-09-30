@@ -6,7 +6,7 @@ import redij.exception.RedisException;
 public class NodePipeline {
 
    private static final Object[] EMPTY_RESPONSE = new Object[0];
-   private final Node node;
+   public final Node node;
    private int count;
 
    public NodePipeline(Node node) {
@@ -54,6 +54,16 @@ public class NodePipeline {
       count++;
    }
 
+   public void WATCH(String... keys) throws IOException {
+      node.WATCHreq(keys);
+      count++;
+   }
+
+   public void UNWATCH() throws IOException {
+      node.UNWATCHreq();
+      count++;
+   }
+
    public void GET(String key) throws IOException {
       node.GETreq(key);
       count++;
@@ -66,16 +76,13 @@ public class NodePipeline {
       node.con.out.flush();
       Object[] responses = new Object[count];
       for (int i = 0; i < responses.length; i++) {
-         try {
-            responses[i] = RESP.read(node.con.in, node.buf);
-         } catch (RedisException ex) {
-            responses[i] = ex;
-         }
+         responses[i] = RESP.read(node.con.in, node.buf);
+         count--;
       }
       return responses;
    }
 
-   public void clear() {
-      count = 0;
+   public void clear() throws IOException {
+      sync();
    }
 }
